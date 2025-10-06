@@ -145,7 +145,7 @@ ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
   geom_point()
 
 
-# Escala logaritmica
+# Escala logarítmica
 ggplot(gapminder_2007,  aes(x = gdpPercap, y = lifeExp)) +
   geom_point() + 
   scale_x_log10()

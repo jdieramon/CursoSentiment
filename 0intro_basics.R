@@ -23,7 +23,7 @@ x**2
 x**x
 
 # Propiedades de vectores: tipo/clase y tamaño/longitud
-# Tipo, se obtiene con 'typeof()'
+# Tipo, se obtiene con 'class()'
 class(saludo)
 class(x)
 
@@ -36,8 +36,4 @@ ciudades <- c("Sevilla", "Granada", "Lugo")
 ciudades
 class(ciudades)
 length(ciudades)
-
-
-
-
 
