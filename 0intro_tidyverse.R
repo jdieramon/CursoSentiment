@@ -11,7 +11,7 @@ library(gapminder)
 library(dplyr)
 library(ggplot2)
 
-# Ver el contenidpo de gapminder
+# Ver el contenipo de 'gapminder'
 gapminder
 
 
@@ -96,14 +96,14 @@ gapminder %>%
 
 ## GROUP_BY
 ## -----------------------------------------------------------------------------
-# Agrupando por year
+# Agrupar por año
 gapminder %>% 
   group_by(year)  %>% 
   summarize(meanLifeExp = mean(lifeExp),totalPop = sum(as.numeric(pop)), 
             maxGdpPercap = max(gdpPercap))
 
 
-# Agrupando por year con numero de casos n()
+# Agrupar por año con numero de casos n()
 gapminder %>% 
   group_by(year)  %>% 
   summarize(totalcase = n(), 
@@ -111,7 +111,7 @@ gapminder %>%
             maxGdpPercap = max(gdpPercap))
 
 
-# Agrupando por continente en 2007
+# Agrupar por continente en 2007
 gapminder %>% 
   filter(year == 2007) %>% 
   group_by(continent)  %>% 
@@ -120,7 +120,7 @@ gapminder %>%
             maxGdpPercap = max(gdpPercap))
 
 
-# Agrupando por continente, year
+# Agrupar por continente, year
 gapminder %>% 
   group_by(year, continent)  %>% 
   summarize(meanLifeExp = mean(lifeExp),
@@ -144,57 +144,65 @@ gapminder_2007 <- gapminder %>%
 ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) + 
   geom_point()
 
+gapminder_2007 %>% 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + 
+  geom_point()
+
 
 # Escala logarítmica
-ggplot(gapminder_2007,  aes(x = gdpPercap, y = lifeExp)) +
-  geom_point() + 
+gapminder_2007 %>% 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + 
+  geom_point() +
   scale_x_log10()
 
 
-# Estetica adicional : color + tamaño
+# Estética adicional : color + tamaño
 ## -----------------------------------------------------------------------------
 # variable categorica: color
-ggplot(gapminder_2007,  aes(x = gdpPercap, y = lifeExp, 
-                            color = continent)) +
-  geom_point() + 
+gapminder_2007 %>% 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent)) + 
+  geom_point() +
   scale_x_log10()
 
 
 ## Change color
-ggplot(gapminder_2007,  aes(x = gdpPercap, y = lifeExp, 
-                            color = continent)) +
-  geom_point() + 
-  scale_x_log10() +
+#library(RColorBrewer)
+#display.brewer.all()
+
+gapminder_2007 %>% 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent)) + 
+  geom_point() +
+  scale_x_log10() + 
   scale_color_brewer(palette="Dark2")
 
 ## Change color2
-ggplot(gapminder_2007,  aes(x = gdpPercap, y = lifeExp, 
-                            color = continent)) +
-  geom_point() + 
-  scale_x_log10() +
+gapminder_2007 %>% 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent)) + 
+  geom_point() +
+  scale_x_log10() + 
   scale_color_brewer(palette="Pastel2")
 
 
 ## Change color3
-ggplot(gapminder_2007,  aes(x = gdpPercap, y = lifeExp, 
-                            color = continent)) +
-  geom_point() + 
-  scale_x_log10() +
+gapminder_2007 %>% 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent)) + 
+  geom_point() +
+  scale_x_log10() + 
   scale_color_brewer(palette="PuOr")
 
 
-
-
-# variable numerica: tamaño
-ggplot(gapminder_2007,  
-       aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) +
-  geom_point() + 
-  scale_x_log10()
+# variable numérica: tamaño
+gapminder_2007 %>% 
+  ggplot(aes(x = gdpPercap, y = lifeExp, 
+             color = continent, size = population)) + 
+  geom_point() +
+  scale_x_log10() 
 
 
 # Paneles
 ## -----------------------------------------------------------------------------
-ggplot(gapminder_2007,  aes(x = gdpPercap, y = lifeExp)) +
+gapminder_2007 %>% 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) +
   geom_point() + 
   scale_x_log10() + 
   facet_wrap(~ continent)
@@ -202,16 +210,15 @@ ggplot(gapminder_2007,  aes(x = gdpPercap, y = lifeExp)) +
 
 # Datos resumidos
 ## -----------------------------------------------------------------------------
-# Agrupando por continente, year
+# Agrupar por continente, year
 by_year_continent <- gapminder %>% 
   group_by(year, continent)  %>% 
   summarize(meanLifeExp = mean(lifeExp),
             totalPop = sum(as.numeric(pop)),
             maxGdpPercap = max(gdpPercap))
   
-
-ggplot(by_year_continent, 
-       aes(x = year, y= totalPop, color = continent)) +
+by_year_continent %>% 
+  ggplot(aes(x = year, y= totalPop, color = continent)) +
   geom_point()
 
 
@@ -230,14 +237,14 @@ gapminder %>%
 
 
 # Datos resumidos
-ggplot(by_year_continent, 
-       aes(x = year, y= totalPop, color = continent)) +
+by_year_continent %>% 
+  ggplot(aes(x = year, y= totalPop, color = continent)) +
   geom_line()
 
 
 ## Bar plot
 ## -----------------------------------------------------------------------------
-# Agrupando por continente en 2007
+# Agrupar por continente en 2007
 by_continent2007 <- gapminder %>% 
   filter(year == 2007) %>% 
   group_by(continent)  %>% 
@@ -245,6 +252,15 @@ by_continent2007 <- gapminder %>%
             totalPop = sum(as.numeric(pop)),
             maxGdpPercap = max(gdpPercap))
 
-
-ggplot(by_continent2007, aes(x = continent, y = meanLifeExp)) + 
+by_continent2007 %>% 
+  ggplot(aes(x = continent, y = meanLifeExp)) + 
   geom_col()
+
+by_continent2007 %>% 
+  ggplot(aes(x = forcats::fct_reorder(continent, meanLifeExp), y = meanLifeExp)) + 
+  geom_col() + 
+  labs(title = "Avg. Life Expectancy by Continent (2007)",
+       x = "",
+       y = "Life Expectancy (years)")
+
+
