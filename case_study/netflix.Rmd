@@ -1,0 +1,209 @@
+---
+title: "Caso estudio : Netflix"
+author: "Jose V. Die"
+date: "9/29/2025"
+output: rmdformats::robobook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+En este caso estudio repasaremos las herramientas de análisis que hemos visto hasta ahora usando una colección de títulos disponibles en la plataforma Netflix. Los datos se han obtenido de la plataforma [Kaggle]( https://www.kaggle.com/). El dataset consiste de una serie de variables de interés sobre un título de una película o serie de TV como el año de producción, el casting, director, así como una breve descripción del título.  
+  
+  
+  En este capítulo, una vez implementado el análisis de sentimiento sobre nuestro dataset, exploraremos distintas aproximaciones para comprender el componente emocional de los títulos cinematográficos. Concretamente, abordaremos los siguientes aspectos:  
+    
+  
+  * Para cada película, calcularemos el número de palabras asociadas a emociones, con el fin de caracterizar su tono emocional.  
+  * Para un título concreto, identificaremos todas las emociones que transmite.  
+  * Para una emoción concreta, determinaremos qué películas la representan con mayor intensidad.  
+  * Para una emoción concreta, analizaremos su evolución a lo largo del tiempo.  
+  * Para una emoción concreta, modelizaremos su presencia en los títulos a lo largo de los años.  
+  
+
+
+
+### Cargar librerías 
+```{r libraries, message=FALSE}
+library(tidytext)
+library(dplyr)
+library(ggplot2)
+```
+
+### Leer datos 
+```{r climate_text}
+netflix <- read.csv(file = "data/netflix.csv")
+glimpse(netflix)
+```
+
+## Análisis de sentimiento
+Para implementar análisis de sentimiento podemos seguir los siguientes pasos :     
+ 
+  1. seleccionar de variables de interés : title, release_year, description  
+  2. renombrar la variable release_year → year    
+  3. *tokenizar*   
+  4. elimnar *stop_words*  
+  5. obtener el sentimiento del dataset (diccionario 'nrc')  
+    
+    
+    
+  
+```{r, echo= F, message=FALSE}
+netflix_sentiment <-  as_tibble(netflix) %>% 
+  select(title, release_year, description) %>% 
+  dplyr::rename(year = release_year) %>% 
+  unnest_tokens(word, description) %>% 
+  anti_join(stop_words) %>% 
+  inner_join(get_sentiments("nrc"), relationship = "many-to-many")
+  
+totals <- netflix_sentiment %>% 
+  count(title, sort = T) %>% 
+  dplyr::rename(total_words = n)
+
+netflix_sentiment <- netflix_sentiment %>% 
+  inner_join(totals, by = "title")
+
+netflix_sentiment
+```
+
+Podemos identificar las palabras asociadas a emociones que presenta cada película. 
+
+```{r, echo=FALSE}
+netflix_sentiment %>%
+  count(title, sort = TRUE)
+
+movie_n_sentiment <- netflix_sentiment %>%
+  count(title, sort = TRUE) %>% 
+  slice(1) %>% 
+  pull(title)
+```
+
+La película cuya descripción cuenta con más palabras asociadas a emociones es "`r movie_n_sentiment`". Podemos observar todas las emociones asociadas a esta película.
+
+```{r, echo=FALSE}
+netflix_sentiment %>%
+  filter(title == movie_n_sentiment) %>% 
+  select(-total_words)
+
+```
+
+Y podemos estimar la proproción de cada emoción asociada a esta película. 
+```{r, echo=FALSE}
+netflix_sentiment %>%
+  filter(title == movie_n_sentiment) %>% 
+  count(title, sentiment, total_words, sort = TRUE) %>% 
+  mutate(percent = n / total_words)
+
+```
+A continuación, nos preguntamos cuál es la película que presenta la mayor proporción de emociones asociadas a la alegría (*joy*) y a la tristeza (*sadness*). Para evitar la distorsión que supondría que una película con una única palabra aparezca con un 100% de alegría, aplicaremos un filtro y consideraremos únicamente aquellas películas que cuenten con al menos 5 palabras asociadas a emociones. Estas son las tres películas más alegres : 
+
+```{r joy, echo=FALSE}
+netflix_sentiment %>%
+  # count by date, sentiment, and total_words
+  count(title, year, sentiment, total_words) %>% 
+  ungroup() %>%
+  mutate(percent = n / total_words) %>%
+  # filtrar por sentimiento y, al menos, 5 palabras asociadas 
+  filter(sentiment == "joy", n >=5) %>%
+  arrange(desc(percent)) %>% 
+  head(3)
+
+```
+Análogamente, identificaremos las tres películas más tristes : 
+```{r sadness, echo=FALSE}
+netflix_sentiment %>%
+  # count by date, sentiment, and total_words
+  count(title, year, sentiment, total_words) %>% 
+  ungroup() %>%
+  mutate(percent = n / total_words) %>%
+  # filtrar por sentimiento y, al menos, 5 palabras asociadas 
+  filter(sentiment == "sadness", n >=5) %>%
+  arrange(desc(percent)) %>% 
+  head(3)
+
+```
+
+## Evolución temporal  
+A continuación, obtendremos la evolución de los sentimientos (*joy*/*sadness*) a lo largo del tiempo. Para este ejemplo, usaremos los datos disponibles de los últimos 50 años (>1975).   
+
+```{r, temporal, echo=FALSE, warning=FALSE, message=FALSE}
+netflix_sentiment %>%
+  # count by date, sentiment, and total_words
+  count(title, year, sentiment, total_words) %>% 
+  ungroup() %>%
+  filter(sentiment %in% c("joy", "sadness")) %>% 
+  group_by(year, sentiment) %>% 
+  #filter(year == 1942) %>% # punto de control para la explicación
+  filter(year > 1975) %>% 
+  summarize(total_words = sum(total_words),
+            emotion_words = sum(n), 
+            percent = emotion_words / total_words, 
+            .groups = "drop") %>% 
+  # Set up the plot with aes()
+  ggplot(aes(x=year, y=percent, color=sentiment)) + 
+  geom_line(size = 1) +
+  geom_smooth(method = "lm", se = FALSE, lty = 2.5,lwd = 0.75) +
+  expand_limits(y = 0) + 
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_color_brewer(palette = "Set2") +  # paleta de colores suaves
+  labs(title = "Visualizing sentiment over time", 
+       subtitle = "1975 to present",
+       x = "", y = "")
+
+```
+
+ Comentarios :  
+   
+  * `scale_fill_brewer()` →  para áreas, barras, polígonos (fill)  
+  * `scale_color_brewer()` → para líneas o puntos (color)  
+  
+## Modelización 
+Finalmente, ajustamos un modelo lineal para explorar la evolución de la proporción de palabras asociadas a las emociones en las películas a lo largo del tiempo.
+
+
+Para modelizar una emoción a lo largo del tiempo podemos seguir los siguientes pasos :     
+ 
+  1. calcular para cada película (año > 1975) el porcentaje de palabras de esa emoción respecto al total de palabras 
+  2. con `lm(percent ~ year)`estimamos una tendencia lineal que nos permite observar si este tipo de vocabulario aumenta o disminuye con los años.   
+  3. el resultado de `summary(modelo)` ofrece los coeficientes del modelo (intercepto y pendiente), así como medidas de ajuste que indican la fuerza de la relación entre tiempo y proporción de palabras de esa emoción.
+  
+  
+```{r modeling_sadness}
+# Modeling sadness
+sadness_by_year <- netflix_sentiment %>% 
+  filter(year > 1975, sentiment == "sadness") %>% 
+  count(title, year, total_words) %>% 
+  ungroup() %>% 
+  mutate(percent = n / total_words)
+
+model_sadness <- lm(percent ~ year, data = sadness_by_year)
+
+summary(model_sadness)
+
+```
+
+```{r}
+# Modeling joy
+```
+
+
+```{r modeling_joy, echo=FALSE}
+# Modeling joy
+joy_by_year <- netflix_sentiment %>% 
+  filter(year > 1975, sentiment == "joy") %>% 
+  count(title, year, total_words) %>% 
+  ungroup() %>% 
+  mutate(percent = n / total_words)
+
+model_joy <- lm(percent ~ year, data = joy_by_year)
+
+summary(model_joy)
+
+```
+
+El resultado de nuestro análisis (representación visual y modelización de emociones) sugiere que la proporción de palabras asociadas a la tristeza (*sadness*) no presenta una tendencia significativa en el período considerado, ya que la pendiente no resulta estadísticamente distinta de cero. En contraste, el vocabulario vinculado a la alegría (*joy*) sí evidencia una tendencia creciente y significativa a lo largo del tiempo. Esto sugiere que, en general, las películas posteriores a 1975 tienden a incorporar progresivamente un mayor uso de palabras relacionadas con la alegría, proporcionando este tono emocional a las películas que se pueden obetner en Netflix.
+
+
+
